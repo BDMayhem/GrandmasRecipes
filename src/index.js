@@ -4,9 +4,9 @@ import './index.css';
 import registerServiceWorker from './registerServiceWorker';
 import { Button, Modal, FormGroup, ControlLabel, FormControl, Well, HelpBlock, Accordion, Panel, ListGroup, ListGroupItem, Grid, Row, Col } from 'react-bootstrap';
 import SearchInput, { createFilter } from 'react-search-input';
+import initialRecipes from './initialRecipes.js';
 
-let recipes = [{name: 'Hamburger', ingredients: 'Beef, Bun, Mustard, Pickle', directions: 'make burger, eat it', key: 0}, {name: 'Hamburger Helper', ingredients: 'Hamburger don\'t need no help', directions: 'Just make a burger instead', key: 1}];
-
+let recipes = initialRecipes;
 let recipeCounter = recipes.length;
 const KEYS_TO_FILTER = ['name', 'ingredients', 'directions'];
 
