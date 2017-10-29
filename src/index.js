@@ -6,8 +6,6 @@ import { Button, Modal, FormGroup, ControlLabel, FormControl, Well, HelpBlock, A
 import SearchInput, { createFilter } from 'react-search-input';
 import initialRecipes from './initialRecipes.js';
 
-let recipes = initialRecipes;
-let recipeCounter = recipes.length;
 const KEYS_TO_FILTER = ['name', 'ingredients', 'directions'];
 
 class App extends React.Component {
@@ -16,9 +14,11 @@ class App extends React.Component {
 
     this.state = {
       show: false,
+      recipes: initialRecipes,
+      recipeCounter: initialRecipes.length,
       currentRecipe: {key: null},
       searchTerm: '',
-      searchResults: recipes
+      searchResults: []
     }
     
     this.edit = this.edit.bind(this);
@@ -28,6 +28,16 @@ class App extends React.Component {
     this.save = this.save.bind(this);
     this.searchUpdated = this.searchUpdated.bind(this);
     this.secondaryAddRecipe = this.secondaryAddRecipe.bind(this);
+  }
+
+  componentWillMount() {
+    console.log('will mount')
+    this.read();
+  }
+
+  componentDidMount() {
+    console.log('did mount')
+    this.searchUpdated('');
   }
   
   open() {
@@ -42,13 +52,18 @@ class App extends React.Component {
   }
 
   save(name, ingredients, directions) {
+    const tempRecipes = this.state.recipes;
     if(this.state.currentRecipe.key !== null) {
-      const toSave = recipes.findIndex(i => Number(i.key) === Number(this.state.currentRecipe.key));
-      recipes.splice(toSave, 1, {name: name, ingredients: ingredients, directions: directions, key: Number(this.state.currentRecipe.key)})
+      const toSave = this.state.recipes.findIndex(i => Number(i.key) === Number(this.state.currentRecipe.key));
+      tempRecipes.splice(toSave, 1, {name: name, ingredients: ingredients, directions: directions, key: Number(this.state.currentRecipe.key)});
+      this.setState({ recipes: tempRecipes });
 
     } else {
-      recipes.push({name: name, ingredients: ingredients, directions: directions, key: Number(recipeCounter)});
-      recipeCounter++;
+      tempRecipes.push({name: name, ingredients: ingredients, directions: directions, key: this.state.recipeCounter});
+      this.setState({
+        recipes: tempRecipes,
+        recipeCounter: this.state.recipeCounter++
+      })
     }
 
     this.setState({
@@ -56,9 +71,9 @@ class App extends React.Component {
       currentRecipe: {key: null}
     }, 
     () => {
-      console.log(recipes)
       this.searchUpdated(this.state.searchTerm);
-      write();
+      console.log('saving', this.state.recipes)
+      this.write();
     })
   }
 
@@ -77,23 +92,51 @@ class App extends React.Component {
   }
 
   delete(event) {
-    const toDelete = recipes.findIndex(i => i.key === Number(event.target.dataset.index));
-    recipes.splice(toDelete, 1);
+    const toDelete = this.state.recipes.findIndex(i => i.key === Number(event.target.dataset.index));
+    const tempRecipes = this.state.recipes;
+    tempRecipes.splice(toDelete, 1);
+    this.setState({ recipes: tempRecipes });
     this.searchUpdated(this.state.searchTerm);
-    write();
+    this.write();
   }
 
   searchUpdated(term) {
-    const filteredRecipes = recipes.filter(createFilter(term, KEYS_TO_FILTER));
+    const filteredRecipes = this.state.recipes.filter(createFilter(term, KEYS_TO_FILTER));
     this.setState({
       searchTerm: term,
       searchResults: filteredRecipes
-    });
+    }, () => console.log('updated results', this.state.searchResults));
   }
 
   secondaryAddRecipe() {
     document.getElementById('add-recipe').click();
   }
+
+  read() {
+    if (localStorage['recipes'] === undefined) {
+      console.log('saving initial recipes to local storage')
+      localStorage.setItem('recipes', JSON.stringify(this.state.recipes));
+    }
+    
+    if(localStorage['recipeCounter'] === undefined) {
+      console.log('saving initial recipe counter to local storage')
+      localStorage.setItem('recipeCounter', this.state.recipeCounter);
+    }
+    console.log('reading recipes from storage', this.state.recipes)
+    this.setState({recipes: JSON.parse(localStorage['recipes'])}, () =>
+      console.log('done reading recipes from storage', this.state.recipes)
+    );
+    this.setState({recipeCounter: localStorage['recipeCounter']});
+    console.log('results', this.state.searchResults)
+  }
+  
+  write() {
+    console.log('now write', this.state.recipes)
+    localStorage.setItem('recipes', JSON.stringify(this.state.recipes));
+    localStorage.setItem('recipeCounter', this.state.recipeCounter);
+    this.read();
+  }
+  
 
   render() {
     return(
@@ -240,27 +283,6 @@ class AddRecipe extends React.Component {
   }
 }
 
-function read() {
-  if (localStorage['recipes'] === undefined) {
-      localStorage.setItem('recipes', JSON.stringify(recipes));
-  }
-  
-  if(localStorage['recipeCounter']) {
-    recipeCounter = localStorage['recipeCounter']
-  } else {
-    localStorage.setItem('recipeCounter', recipeCounter);
-  }
+ReactDOM.render(<App />, document.getElementById('root'));
 
-  recipes = JSON.parse(localStorage['recipes']);
-
-  ReactDOM.render(<App />, document.getElementById('root'));
-}
-
-function write() {
-  localStorage.setItem('recipes', JSON.stringify(recipes));
-  localStorage.setItem('recipeCounter', recipeCounter);
-  read();
-}
-
-read();
 registerServiceWorker();
