@@ -31,20 +31,22 @@ class App extends React.Component {
   }
 
   componentWillMount() {
-    console.log('will mount')
-    this.read();
+    //load initial data
+    this.read(); 
   }
 
   componentDidMount() {
-    console.log('did mount')
-    this.searchUpdated('');
+    //populate search results with all contents of this.state.recipes
+    this.searchUpdated(this.state.searchTerm);
   }
   
   open() {
+    //open recipe in modal
     this.setState({ show: true });
   }
 
   close() {
+    //close recipe modal
     this.setState({
       show: false,
       currentRecipe: {key: null}
@@ -53,31 +55,33 @@ class App extends React.Component {
 
   save(name, ingredients, directions) {
     const tempRecipes = this.state.recipes;
+    let tempCounter = Number(this.state.recipeCounter);
+
+    //edit existing recipe
     if(this.state.currentRecipe.key !== null) {
       const toSave = this.state.recipes.findIndex(i => Number(i.key) === Number(this.state.currentRecipe.key));
       tempRecipes.splice(toSave, 1, {name: name, ingredients: ingredients, directions: directions, key: Number(this.state.currentRecipe.key)});
-      this.setState({ recipes: tempRecipes });
 
+    //save new recipe
     } else {
-      tempRecipes.push({name: name, ingredients: ingredients, directions: directions, key: this.state.recipeCounter});
-      this.setState({
-        recipes: tempRecipes,
-        recipeCounter: this.state.recipeCounter++
-      })
+      tempRecipes.push({name: name, ingredients: ingredients, directions: directions, key: Number(this.state.recipeCounter)});
+      tempCounter++;
     }
-
+    
     this.setState({
+      recipes: tempRecipes,
+      recipeCounter: tempCounter,
       show: false,
       currentRecipe: {key: null}
     }, 
     () => {
       this.searchUpdated(this.state.searchTerm);
-      console.log('saving', this.state.recipes)
       this.write();
     })
   }
 
   edit(event) {
+    //populate modal fields with clicked recipe data
     const toEdit = this.state.searchResults.findIndex(i => Number(event.target.dataset.index) === i.key);
 
     this.setState({
@@ -95,6 +99,7 @@ class App extends React.Component {
     const toDelete = this.state.recipes.findIndex(i => i.key === Number(event.target.dataset.index));
     const tempRecipes = this.state.recipes;
     tempRecipes.splice(toDelete, 1);
+
     this.setState({ recipes: tempRecipes });
     this.searchUpdated(this.state.searchTerm);
     this.write();
@@ -105,33 +110,30 @@ class App extends React.Component {
     this.setState({
       searchTerm: term,
       searchResults: filteredRecipes
-    }, () => console.log('updated results', this.state.searchResults));
+    });
   }
 
   secondaryAddRecipe() {
+    //this is for the button at the top, which just clicks the button at the bottom
     document.getElementById('add-recipe').click();
   }
 
   read() {
+    //populate localstorage with initial data
     if (localStorage['recipes'] === undefined) {
-      console.log('saving initial recipes to local storage')
       localStorage.setItem('recipes', JSON.stringify(this.state.recipes));
     }
     
     if(localStorage['recipeCounter'] === undefined) {
-      console.log('saving initial recipe counter to local storage')
       localStorage.setItem('recipeCounter', this.state.recipeCounter);
     }
-    console.log('reading recipes from storage', this.state.recipes)
-    this.setState({recipes: JSON.parse(localStorage['recipes'])}, () =>
-      console.log('done reading recipes from storage', this.state.recipes)
-    );
+
+    //populate state with localstorage data
+    this.setState({recipes: JSON.parse(localStorage['recipes'])});
     this.setState({recipeCounter: localStorage['recipeCounter']});
-    console.log('results', this.state.searchResults)
   }
   
   write() {
-    console.log('now write', this.state.recipes)
     localStorage.setItem('recipes', JSON.stringify(this.state.recipes));
     localStorage.setItem('recipeCounter', this.state.recipeCounter);
     this.read();
